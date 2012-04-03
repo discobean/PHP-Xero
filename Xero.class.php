@@ -300,6 +300,63 @@ class XeroCollection extends Xero implements SeekableIterator
    {
       return each($this->__collection);
    }
+
+   public function sort($by, $direction='toggle')
+   {
+      if(!$by)
+         return;
+
+      $direction = strtolower($direction);
+
+      $tot = $this->count();
+
+      $work = true;
+      while($work == true)
+      {
+         $work = false;
+         for($i=0; $i<$tot-1; $i++)
+         {
+            // check to see if we have to do a numeric sort, or alphanumeric
+            $val1 = $this->__collection[$i]->$by;
+            $val2 = $this->__collection[$i+1]->$by;
+
+            if(is_numeric($val1) && is_numeric($val2))
+            {
+               // do a numeric sort
+               if($direction == 'asc' && (int)$val1 > (int)$val2)
+               {
+                  $work = true;
+                  $this->swap($i, $i+1);
+               }
+               else if($direction == 'desc' && (int)$val1 < (int)$val2)
+               {
+                  $work = true;
+                  $this->swap($i, $i+1);
+               }
+            }
+            else
+            {
+               if($direction == 'asc' && $val1 > $val2)
+               {
+                  $work = true;
+                  $this->swap($i, $i+1);
+               }
+               else if($direction == 'desc' && $val1 < $val2)
+               {
+                  $work = true;
+                  $this->swap($i, $i+1);
+               }
+            }
+         }
+      }
+   }
+
+   public function swap($index_a, $index_b)
+   {
+      $tmp_val = $this->__collection[$index_a];
+      $this->__collection[$index_a] = $this->__collection[$index_b];
+      $this->__collection[$index_b] = $tmp_val;
+   }
 }
 
 class XeroContacts extends XeroCollection {
