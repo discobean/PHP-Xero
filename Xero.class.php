@@ -1,5 +1,52 @@
 <?php
 
+/*
+   Author: Mariusz Stankiewicz (dependent on the work of others - see below)
+
+   Description:
+   This is a class I made with help from David Pitman's original PHP Class located here: https://github.com/thinktree/PHP-Xero
+   It interacts with the xero.com private application API
+
+   I originally built this so that I can talk to the API in an OO way.
+
+   It is kind of similar to ActiveRecord, but for the Xero API.
+
+   Right now only handles a few method calls, but its all I needed at the time:
+    * Create/Find a Contact
+    * Find an Account
+    * Create a new Invoice
+    * Download Invoice as PDF
+
+   License (applies to all classes):
+   The MIT License
+
+   Copyright (c) 2007 Andy Smith (Oauth* classes)
+   Copyright (c) 2010 David Pitman (Integration with Curl and Oauth)
+   Copyright (c) 2012 Mariusz Stankiewicz (Xero class)
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal
+   in the Software without restriction, including without limitation the rights
+   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   copies of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+   THE SOFTWARE.
+
+   ---
+
+   Want EXAMPLES? https://github.com/discobean/PHP-Xero
+*/
+
 class Xero
 {
 	const ENDPOINT = 'https://api.xero.com/api.xro/2.0/';
@@ -85,12 +132,10 @@ class Xero
 		curl_setopt($ch, CURLOPT_PUT, true);
 		curl_setopt($ch, CURLOPT_INFILE, $fh);
 		curl_setopt($ch, CURLOPT_INFILESIZE, strlen($post_body));
-		fclose($fh);
-
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 		$xero_response = curl_exec($ch);
 
-		var_dump($xero_response);
+		fclose($fh);
 
 		if(XeroApiException::isException($xero_response))
 			throw new XeroApiException($xero_response);
@@ -124,9 +169,9 @@ class Xero
 		// ideally explode on ?, build the query up again.. This will do for now
 		while(count($args) > 0)
 		{
-			$count = 1;
-			$var = $this->quoteVar(array_shift($args));
-			$query = str_replace('?', $var, $query, $count);
+			$toQuoteVar = array_shift($args);
+			$var = $this->quoteVar($toQuoteVar);
+			$query = preg_replace('/\?/', $var, $query, 1);
 		}
 
 		$unencoded_url = self::ENDPOINT . $this->__method; // for debugging
@@ -143,7 +188,6 @@ class Xero
 
 		$ch = curl_init();
 
-		var_dump($this->HTTP_Accept); exit();
 		if($this->HTTP_Accept)
 			curl_setopt($ch, CURLOPT_HEADER, "Accept: $this->HTTP_Accept");
 
@@ -613,6 +657,7 @@ class XeroPayments extends XeroCollection {
 class XeroPayment {
 	public $Invoice; // XeroInvoice object
 	public $Account; // XeroAccount object
+	public $PaymentID;
 	public $Date;
 	public $CurrencyRate;
 	public $Amount;
@@ -630,6 +675,7 @@ class XeroPayment {
 		$this->Account = new XeroAccount();
 		$this->Account->fromXML($xml_account->asXML());
 
+		$this->PaymentID = Xero::xpath($xml, '/Payment/PaymentID');
 		$this->Date = Xero::xpath($xml, '/Payment/Date');
 		$this->CurrencyRate = Xero::xpath($xml, '/Payment/CurrencyRate');
 		$this->Amount = Xero::xpath($xml, '/Payment/Amount');
@@ -649,6 +695,7 @@ class XeroPayment {
 		if(is_object($this->Account))
 			$this->Account->toXML($xml);
 
+		if($this->PaymentID) $xml->{PaymentID} = $this->PaymentID;
 		if($this->Date) $xml->{Date} = $this->Date;
 		if($this->CurrencyRate) $xml->{CurrencyRate} = $this->CurrencyRate;
 		if($this->Amount) $xml->{Amount} = $this->Amount;
