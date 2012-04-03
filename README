@@ -68,10 +68,10 @@ foreach($invoices as $invoice)
 
 // Get only invoices for one particular contact name
 $contactName = 'API Test Contact';
-$invoiceNumber = 'ORC1040';
 $invoices = new XeroInvoices();
-$invoices->get('Contact.Name == ? AND InvoiceNumber = ?', $contactName, $invoiceNumber);
-// NOTE: You can bind as many variables to ? above
+$invoices->get('Contact.Name == ?', $contactName);
+// NOTE: You can bind as many variables to ? above, like so:
+//   $invoices->get('Contact.Name == ? AND InvoiceNumber == ?', $contactName, $invoiceNumber);
 // NOTE: Above its == not = (as per the API)
 // NOTE: You don't necessarily need to bind variables, it is just cleaner
 
